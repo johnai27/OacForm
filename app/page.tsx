@@ -9,8 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Trash2, Trash, Eye, EyeOff, Download } from "lucide-react"
-import * as XLSX from "xlsx"
+import { Plus, Trash2, Trash, Eye, EyeOff } from "lucide-react"
 
 interface Registro {
   no: number
@@ -29,8 +28,7 @@ interface Registro {
   motivos: string
 }
 
-const GOOGLE_SHEETS_URL =
-  "https://script.google.com/macros/s/AKfycbzDCCANPnacnCrXeAb6PkaKgSqlpHet7SYsrkII6_ViDUUnAhdSwWqVENenuWzLKbvK/exec"
+const GOOGLE_SHEETS_URL = "TU_ENLACE_DE_SCRIPT"
 
 export default function FormularioOAC() {
   const [registros, setRegistros] = useState<Registro[]>([])
@@ -51,9 +49,8 @@ export default function FormularioOAC() {
   })
   const [descripcionesVisibles, setDescripcionesVisibles] = useState<{ [key: number]: boolean }>({})
   const [motivosVisibles, setMotivosVisibles] = useState<{ [key: number]: boolean }>({})
-  const [mensajeGuardado, setMensajeGuardado] = useState("")
+  const [confirmacion, setConfirmacion] = useState("")
 
-  // --- Cargar registros al iniciar ---
   useEffect(() => {
     fetch(GOOGLE_SHEETS_URL + "?action=get")
       .then(res => res.json())
@@ -75,72 +72,42 @@ export default function FormularioOAC() {
     setMotivosVisibles(prev => ({ ...prev, [index]: !prev[index] }))
   }
 
-  // --- Guardar en Google Sheets ---
   const guardarEnGoogleSheets = async (registro: Registro) => {
     try {
       await fetch(GOOGLE_SHEETS_URL, {
         method: "POST",
-        mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "add", registros: [registro] }),
       })
-      setMensajeGuardado("✔ Registro guardado en Google Sheets")
-      setTimeout(() => setMensajeGuardado(""), 3000)
+      setConfirmacion("Registro guardado en Google Sheets ✅")
+      setTimeout(() => setConfirmacion(""), 3000)
     } catch (error) {
       console.error("Error al guardar en Google Sheets:", error)
-      setMensajeGuardado("❌ Error al guardar en Google Sheets")
+      setConfirmacion("Error al guardar en Google Sheets ❌")
     }
   }
 
   const eliminarRegistroGoogleSheets = async (no: number) => {
-    try {
-      await fetch(GOOGLE_SHEETS_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "delete", no }),
-      })
-    } catch (error) {
-      console.error("Error al eliminar registro:", error)
-    }
+    await fetch(GOOGLE_SHEETS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete", no }),
+    })
   }
 
   const eliminarTodaLaListaGoogleSheets = async () => {
-    try {
-      await fetch(GOOGLE_SHEETS_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "clear" }),
-      })
-    } catch (error) {
-      console.error("Error al eliminar toda la lista:", error)
-    }
+    await fetch(GOOGLE_SHEETS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "clear" }),
+    })
   }
 
-  // --- Funciones de lista ---
   const agregarALista = () => {
-    const nuevoRegistro: Registro = {
-      no: registros.length + 1,
-      fecha: new Date().toLocaleDateString("es-ES"),
-      ...formData,
-    }
+    const nuevoRegistro: Registro = { no: registros.length + 1, fecha: new Date().toLocaleDateString("es-ES"), ...formData }
     setRegistros([...registros, nuevoRegistro])
     guardarEnGoogleSheets(nuevoRegistro)
-    setFormData({
-      nombres: "",
-      apellidos: "",
-      prefijoId: "V-",
-      cedulaPasaporte: "",
-      telefono: "",
-      direccion: "",
-      municipio: "",
-      parroquia: "",
-      breveDescripcion: "",
-      promotor: "",
-      informacionFue: "satisfactoria",
-      motivos: "",
-    })
+    setFormData({ nombres: "", apellidos: "", prefijoId: "V-", cedulaPasaporte: "", telefono: "", direccion: "", municipio: "", parroquia: "", breveDescripcion: "", promotor: "", informacionFue: "satisfactoria", motivos: "" })
   }
 
   const quitarSeleccionado = () => {
@@ -159,48 +126,6 @@ export default function FormularioOAC() {
     }
   }
 
-  // --- Descargar Excel ---
-  const descargarExcel = () => {
-    const wb = XLSX.utils.book_new()
-    const wsData = [
-      [
-        "NO",
-        "FECHA",
-        "NOMBRES",
-        "APELLIDOS",
-        "PREFIJO_ID",
-        "CÉDULA/PASAPORTE",
-        "TELÉFONO",
-        "MUNICIPIO",
-        "PARROQUIA",
-        "DIRECCIÓN",
-        "BREVE DESCRIPCIÓN",
-        "PROMOTOR",
-        "INFO. SATISFACTORIA",
-        "MOTIVOS",
-      ],
-      ...registros.map(r => [
-        r.no,
-        r.fecha,
-        r.nombres,
-        r.apellidos,
-        r.prefijoId,
-        r.cedulaPasaporte,
-        r.telefono,
-        r.municipio,
-        r.parroquia,
-        r.direccion,
-        r.breveDescripcion,
-        r.promotor,
-        r.informacionFue,
-        r.motivos,
-      ]),
-    ]
-    const ws = XLSX.utils.aoa_to_sheet(wsData)
-    XLSX.utils.book_append_sheet(wb, ws, "Registros")
-    XLSX.writeFile(wb, "registros_oac.xlsx")
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#DFD2D0] to-[#BFA4A1] p-6">
       <div className="mx-auto max-w-7xl">
@@ -210,42 +135,25 @@ export default function FormularioOAC() {
           </CardHeader>
           <CardContent className="p-8 space-y-8">
 
-            {/* --- Información Personal --- */}
+            {/* Información Personal */}
             <div className="space-y-6">
-              <h3 className="text-lg font-bold text-[#804A43] border-b-2 border-[#DFD2D0] pb-2">
-                Información Personal
-              </h3>
+              <h3 className="text-lg font-bold text-[#804A43] border-b-2 border-[#DFD2D0] pb-2">Información Personal</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="nombres" className="text-[#804A43] font-semibold">Nombres</Label>
-                  <Input
-                    id="nombres"
-                    value={formData.nombres}
-                    onChange={(e) => handleInputChange("nombres", e.target.value)}
-                    className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]"
-                  />
+                  <Input id="nombres" value={formData.nombres} onChange={e => handleInputChange("nombres", e.target.value)} className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="apellidos" className="text-[#804A43] font-semibold">Apellidos</Label>
-                  <Input
-                    id="apellidos"
-                    value={formData.apellidos}
-                    onChange={(e) => handleInputChange("apellidos", e.target.value)}
-                    className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]"
-                  />
+                  <Input id="apellidos" value={formData.apellidos} onChange={e => handleInputChange("apellidos", e.target.value)} className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="telefono" className="text-[#804A43] font-semibold">Teléfono</Label>
-                  <Input
-                    id="telefono"
-                    value={formData.telefono}
-                    onChange={(e) => handleInputChange("telefono", e.target.value)}
-                    className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]"
-                  />
+                  <Input id="telefono" value={formData.telefono} onChange={e => handleInputChange("telefono", e.target.value)} className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="prefijoId" className="text-[#804A43] font-semibold">Prefijo ID</Label>
-                  <Select value={formData.prefijoId} onValueChange={(v) => handleInputChange("prefijoId", v)}>
+                  <Select value={formData.prefijoId} onValueChange={v => handleInputChange("prefijoId", v)}>
                     <SelectTrigger className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]">
                       <SelectValue />
                     </SelectTrigger>
@@ -259,84 +167,50 @@ export default function FormularioOAC() {
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="cedulaPasaporte" className="text-[#804A43] font-semibold">Cédula/Pasaporte</Label>
-                  <Input
-                    id="cedulaPasaporte"
-                    value={formData.cedulaPasaporte}
-                    onChange={(e) => handleInputChange("cedulaPasaporte", e.target.value)}
-                    className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]"
-                  />
+                  <Input id="cedulaPasaporte" value={formData.cedulaPasaporte} onChange={e => handleInputChange("cedulaPasaporte", e.target.value)} className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]" />
                 </div>
               </div>
             </div>
 
-            {/* --- Ubicación --- */}
+            {/* Ubicación */}
             <div className="space-y-6">
               <h3 className="text-lg font-bold text-[#804A43] border-b-2 border-[#DFD2D0] pb-2">Ubicación</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="municipio" className="text-[#804A43] font-semibold">Municipio</Label>
-                  <Input
-                    id="municipio"
-                    value={formData.municipio}
-                    onChange={(e) => handleInputChange("municipio", e.target.value)}
-                    className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]"
-                  />
+                  <Input id="municipio" value={formData.municipio} onChange={e => handleInputChange("municipio", e.target.value)} className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="parroquia" className="text-[#804A43] font-semibold">Parroquia</Label>
-                  <Input
-                    id="parroquia"
-                    value={formData.parroquia}
-                    onChange={(e) => handleInputChange("parroquia", e.target.value)}
-                    className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]"
-                  />
+                  <Input id="parroquia" value={formData.parroquia} onChange={e => handleInputChange("parroquia", e.target.value)} className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]" />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="direccion" className="text-[#804A43] font-semibold">Dirección</Label>
-                  <Textarea
-                    id="direccion"
-                    value={formData.direccion}
-                    onChange={(e) => handleInputChange("direccion", e.target.value)}
-                    className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43] min-h-[80px]"
-                  />
+                  <Textarea id="direccion" value={formData.direccion} onChange={e => handleInputChange("direccion", e.target.value)} className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43] min-h-[80px]" />
                 </div>
               </div>
             </div>
 
-            {/* --- Detalles de Atención --- */}
+            {/* Detalles de Atención */}
             <div className="space-y-6">
               <h3 className="text-lg font-bold text-[#804A43] border-b-2 border-[#DFD2D0] pb-2">Detalles de Atención</h3>
               <div className="grid grid-cols-1 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="breveDescripcion" className="text-[#804A43] font-semibold">Breve descripción</Label>
-                  <Textarea
-                    id="breveDescripcion"
-                    value={formData.breveDescripcion}
-                    onChange={(e) => handleInputChange("breveDescripcion", e.target.value)}
-                    className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43] min-h-[100px]"
-                  />
+                  <Textarea id="breveDescripcion" value={formData.breveDescripcion} onChange={e => handleInputChange("breveDescripcion", e.target.value)} className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43] min-h-[100px]" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="promotor" className="text-[#804A43] font-semibold">Promotor (servidor que atendió)</Label>
-                  <Input
-                    id="promotor"
-                    value={formData.promotor}
-                    onChange={(e) => handleInputChange("promotor", e.target.value)}
-                    className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]"
-                  />
+                  <Input id="promotor" value={formData.promotor} onChange={e => handleInputChange("promotor", e.target.value)} className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43]" />
                 </div>
                 <div className="space-y-4">
                   <Label className="text-[#804A43] font-semibold">La información fue:</Label>
-                  <RadioGroup
-                    value={formData.informacionFue}
-                    onValueChange={(v) => handleInputChange("informacionFue", v)}
-                    className="flex gap-6"
-                  >
-                    <div className="flex items-center space-x-2">
+                  <RadioGroup value={formData.informacionFue} onValueChange={v => handleInputChange("informacionFue", v)} className="flex gap-6">
+                    <div className="flex items-center gap-2">
                       <RadioGroupItem value="satisfactoria" id="satisfactoria" />
                       <Label htmlFor="satisfactoria" className="cursor-pointer font-normal text-[#804A43]">Satisfactoria</Label>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center gap-2">
                       <RadioGroupItem value="insatisfactoria" id="insatisfactoria" />
                       <Label htmlFor="insatisfactoria" className="cursor-pointer font-normal text-[#804A43]">Insatisfactoria</Label>
                     </div>
@@ -345,117 +219,92 @@ export default function FormularioOAC() {
                 {formData.informacionFue === "insatisfactoria" && (
                   <div className="space-y-2">
                     <Label htmlFor="motivos" className="text-[#804A43] font-semibold">Motivos (si insatisfactoria)</Label>
-                    <Textarea
-                      id="motivos"
-                      value={formData.motivos}
-                      onChange={(e) => handleInputChange("motivos", e.target.value)}
-                      className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43] min-h-[80px]"
-                    />
+                    <Textarea id="motivos" value={formData.motivos} onChange={e => handleInputChange("motivos", e.target.value)} className="rounded-xl border-[#BFA4A1] focus:border-[#804A43] focus:ring-[#804A43] min-h-[80px]" />
                   </div>
                 )}
               </div>
             </div>
 
-            {/* --- Botones --- */}
+            {/* Botones */}
             <div className="flex flex-wrap gap-4 pt-4 border-t-2 border-[#DFD2D0]">
-              <Button onClick={agregarALista} className="bg-[#804A43] hover:bg-[#6d3f39] text-white rounded-xl px-6 font-semibold shadow-lg">
-                <Plus className="w-4 h-4 mr-2" /> Agregar a la lista
-              </Button>
-              <Button onClick={quitarSeleccionado} variant="destructive" disabled={seleccionado === null} className="rounded-xl px-6 font-semibold shadow-lg">
-                <Trash2 className="w-4 h-4 mr-2" /> Quitar seleccionado
-              </Button>
-              <Button onClick={eliminarTodaLaLista} variant="destructive" className="rounded-xl px-6 font-semibold shadow-lg">
-                <Trash className="w-4 h-4 mr-2" /> Eliminar toda la lista
-              </Button>
-              <Button onClick={descargarExcel} className="bg-[#804A43] hover:bg-[#6d3f39] text-white rounded-xl px-6 font-semibold shadow-lg">
-                <Download className="w-4 h-4 mr-2" /> Guardar Excel
-              </Button>
+              <Button onClick={agregarALista} className="bg-[#804A43] hover:bg-[#6d3f39] text-white rounded-xl px-6 font-semibold shadow-lg"><Plus className="w-4 h-4 mr-2" />Agregar a la lista</Button>
+              <Button onClick={quitarSeleccionado} variant="destructive" disabled={seleccionado === null} className="rounded-xl px-6 font-semibold shadow-lg"><Trash2 className="w-4 h-4 mr-2" />Quitar seleccionado</Button>
+              <Button onClick={eliminarTodaLaLista} variant="destructive" className="rounded-xl px-6 font-semibold shadow-lg"><Trash className="w-4 h-4 mr-2" />Eliminar toda la lista</Button>
             </div>
 
-            {/* --- Mensaje de guardado --- */}
-            {mensajeGuardado && (
-              <p className="text-sm text-green-700 mt-2">{mensajeGuardado}</p>
+            {/* Confirmación */}
+            {confirmacion && <p className="text-green-700 font-semibold mt-2">{confirmacion}</p>}
+
+            {/* Tabla */}
+            {registros.length > 0 && (
+              <div className="space-y-4 mt-6">
+                <h3 className="text-lg font-bold text-[#804A43] border-b-2 border-[#DFD2D0] pb-2">Registros</h3>
+                <div className="overflow-x-auto rounded-2xl border-2 border-[#BFA4A1] shadow-lg bg-white">
+                  <Table className="min-w-[1800px]">
+                    <TableHeader>
+                      <TableRow className="bg-[#A07772] text-white">
+                        <TableHead className="font-bold uppercase">No.</TableHead>
+                        <TableHead className="font-bold uppercase">Fecha</TableHead>
+                        <TableHead className="font-bold uppercase">Nombres</TableHead>
+                        <TableHead className="font-bold uppercase">Apellidos</TableHead>
+                        <TableHead className="font-bold uppercase">Prefijo ID</TableHead>
+                        <TableHead className="font-bold uppercase">Cédula/Pasaporte</TableHead>
+                        <TableHead className="font-bold uppercase">Teléfono</TableHead>
+                        <TableHead className="font-bold uppercase">Municipio</TableHead>
+                        <TableHead className="font-bold uppercase">Parroquia</TableHead>
+                        <TableHead className="font-bold uppercase">Dirección</TableHead>
+                        <TableHead className="font-bold uppercase">Breve descripción</TableHead>
+                        <TableHead className="font-bold uppercase">Promotor</TableHead>
+                        <TableHead className="font-bold uppercase">Info. Satisfactoria</TableHead>
+                        <TableHead className="font-bold uppercase">Motivos</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {registros.map((registro, index) => (
+                        <TableRow key={index} onClick={() => setSeleccionado(index)} className={`cursor-pointer ${seleccionado === index ? "bg-[#BFA4A1] text-white" : "hover:bg-[#DFD2D0]"}`}>
+                          <TableCell>{registro.no}</TableCell>
+                          <TableCell>{registro.fecha}</TableCell>
+                          <TableCell>{registro.nombres}</TableCell>
+                          <TableCell>{registro.apellidos}</TableCell>
+                          <TableCell>{registro.prefijoId}</TableCell>
+                          <TableCell>{registro.cedulaPasaporte}</TableCell>
+                          <TableCell>{registro.telefono}</TableCell>
+                          <TableCell>{registro.municipio}</TableCell>
+                          <TableCell>{registro.parroquia}</TableCell>
+                          <TableCell className="min-w-[200px] truncate">{registro.direccion}</TableCell>
+                          <TableCell className="min-w-[220px]">
+                            <div className="flex items-center gap-2">
+                              {descripcionesVisibles[index] ? registro.breveDescripcion : <span className="text-[#A07772] italic text-sm">Ver descripción</span>}
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); toggleDescripcion(index) }}>
+                                {descripcionesVisibles[index] ? <EyeOff className="h-4 w-4 text-[#804A43]" /> : <Eye className="h-4 w-4 text-[#804A43]" />}
+                              </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell>{registro.promotor}</TableCell>
+                          <TableCell>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${registro.informacionFue === "satisfactoria" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                              {registro.informacionFue === "satisfactoria" ? "Sí" : "No"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="min-w-[220px]">
+                            {registro.informacionFue === "insatisfactoria" && registro.motivos ? (
+                              <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); toggleMotivos(index) }}>
+                                  {motivosVisibles[index] ? <EyeOff className="h-4 w-4 text-[#804A43]" /> : <Eye className="h-4 w-4 text-[#804A43]" />}
+                                </Button>
+                                {motivosVisibles[index] ? registro.motivos : <span className="text-[#A07772] italic text-sm">Ver motivos</span>}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-gray-400">N/A</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
             )}
-
-            {/* --- Tabla de Registros --- */}
-            <div className="space-y-4 mt-6">
-              {registros.length > 0 && (
-                <>
-                  <h3 className="text-lg font-bold text-[#804A43] border-b-2 border-[#DFD2D0] pb-2">Registros</h3>
-                  <div className="rounded-2xl border-2 border-[#BFA4A1] overflow-hidden shadow-lg bg-white">
-                    <div className="overflow-x-auto overflow-y-visible w-full" style={{ minWidth: "1800px" }}>
-                      <Table className="w-full">
-                        <TableHeader>
-                          <TableRow className="bg-[#A07772] text-white">
-                            <TableHead>No.</TableHead>
-                            <TableHead>Fecha</TableHead>
-                            <TableHead>Nombres</TableHead>
-                            <TableHead>Apellidos</TableHead>
-                            <TableHead>Prefijo ID</TableHead>
-                            <TableHead>Cédula/Pasaporte</TableHead>
-                            <TableHead>Teléfono</TableHead>
-                            <TableHead>Municipio</TableHead>
-                            <TableHead>Parroquia</TableHead>
-                            <TableHead>Dirección</TableHead>
-                            <TableHead>Breve descripción</TableHead>
-                            <TableHead>Promotor</TableHead>
-                            <TableHead>Info. Satisfactoria</TableHead>
-                            <TableHead>Motivos</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {registros.map((registro, index) => (
-                            <TableRow key={index} onClick={() => setSeleccionado(index)} className={`cursor-pointer ${seleccionado === index ? "bg-[#BFA4A1] text-white" : "hover:bg-[#DFD2D0]"}`}>
-                              <TableCell>{registro.no}</TableCell>
-                              <TableCell>{registro.fecha}</TableCell>
-                              <TableCell>{registro.nombres}</TableCell>
-                              <TableCell>{registro.apellidos}</TableCell>
-                              <TableCell>{registro.prefijoId}</TableCell>
-                              <TableCell>{registro.cedulaPasaporte}</TableCell>
-                              <TableCell>{registro.telefono}</TableCell>
-                              <TableCell>{registro.municipio}</TableCell>
-                              <TableCell>{registro.parroquia}</TableCell>
-                              <TableCell className="min-w-[200px] truncate">{registro.direccion}</TableCell>
-                              <TableCell className="min-w-[220px]">
-                                <div className="flex items-center gap-2">
-                                  {descripcionesVisibles[index] ? (
-                                    <span>{registro.breveDescripcion}</span>
-                                  ) : (
-                                    <span className="text-[#A07772] italic text-sm">Ver descripción</span>
-                                  )}
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); toggleDescripcion(index) }}>
-                                    {descripcionesVisibles[index] ? <EyeOff className="h-4 w-4 text-[#804A43]" /> : <Eye className="h-4 w-4 text-[#804A43]" />}
-                                  </Button>
-                                </div>
-                              </TableCell>
-                              <TableCell>{registro.promotor}</TableCell>
-                              <TableCell>
-                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${registro.informacionFue === "satisfactoria" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                                  {registro.informacionFue === "satisfactoria" ? "Sí" : "No"}
-                                </span>
-                              </TableCell>
-                              <TableCell className="min-w-[220px]">
-                                {registro.informacionFue === "insatisfactoria" && registro.motivos ? (
-                                  <div className="flex items-center gap-2">
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); toggleMotivos(index) }}>
-                                      {motivosVisibles[index] ? <EyeOff className="h-4 w-4 text-[#804A43]" /> : <Eye className="h-4 w-4 text-[#804A43]" />}
-                                    </Button>
-                                    {motivosVisibles[index] ? <span>{registro.motivos}</span> : <span className="text-[#A07772] italic text-sm">Ver motivos</span>}
-                                  </div>
-                                ) : (
-                                  <span className="text-sm text-gray-400">N/A</span>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
           </CardContent>
         </Card>
       </div>
