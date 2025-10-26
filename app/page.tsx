@@ -29,7 +29,7 @@ interface Registro {
   motivos: string
 }
 
-const GOOGLE_SHEETS_URL = "TU_URL_DEL_SCRIPT" // 👈 coloca aquí tu URL de Apps Script
+const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbyKIeQpjsAG2nAVYtu_MMrbbj6HpJj8QMEpSpdeHnCGvwQ3QIck0d1IOSOHAzylDaXB4g/exec" // 👈 coloca aquí tu URL de Apps Script
 
 export default function FormularioOAC() {
   const [registros, setRegistros] = useState<Registro[]>([])
