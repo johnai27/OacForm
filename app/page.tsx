@@ -29,7 +29,7 @@ interface Registro {
   motivos: string
 }
 
-const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwbPxSQkDSemj6BLZOb-a2LCt7k5kXRd1TOStK11vvlUwknEQ7bc_E9XzNJNHh_x28nSg/exec" // 👈 coloca aquí tu URL de Apps Script
+const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzTbaBaFWMzhHYWK36-cph193_IhwY6vPrDAQlLMJzj0qgpCJgfGUoN3mpQSkt0m0NfyQ/exec" // 👈 coloca aquí tu URL de Apps Script
 
 export default function FormularioOAC() {
   const [registros, setRegistros] = useState<Registro[]>([])
@@ -52,21 +52,32 @@ export default function FormularioOAC() {
     motivos: "",
   })
 
-  // 🔸 Guardar registro en Google Sheets automáticamente
-  const guardarEnGoogleSheets = async (registro: Registro) => {
-    try {
-      await fetch(GOOGLE_SHEETS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "add", registros: [registro] }),
-      })
-      setConfirmacion("✅ Registro guardado en la nube")
-      setTimeout(() => setConfirmacion(""), 3000)
-    } catch (error) {
-      console.error("Error al guardar:", error)
-      setConfirmacion("❌ Error al guardar en la nube")
-    }
+const guardarEnGoogleSheets = async (registro: Registro) => {
+  try {
+    // Crear los datos como si fuera un formulario
+    const formData = new FormData()
+    Object.entries(registro).forEach(([key, value]) => {
+      formData.append(key, String(value ?? ""))
+    })
+
+    // Enviar los datos al Apps Script
+    const response = await fetch(GOOGLE_SHEETS_URL, {
+      method: "POST",
+      body: formData, // sin headers JSON
+    })
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+
+    const result = await response.text()
+    console.log("Respuesta Google Sheets:", result)
+
+    setConfirmacion("✅ Registro guardado en la nube")
+    setTimeout(() => setConfirmacion(""), 3000)
+  } catch (error) {
+    console.error("❌ Error al guardar:", error)
+    setConfirmacion("❌ Error al guardar en la nube")
   }
+}
 
   // 🔹 Añadir registro
   const agregarALista = () => {
