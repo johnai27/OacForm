@@ -29,7 +29,7 @@ interface Registro {
   motivos: string
 }
 
-const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbyKIeQpjsAG2nAVYtu_MMrbbj6HpJj8QMEpSpdeHnCGvwQ3QIck0d1IOSOHAzylDaXB4g/exec" // 👈 coloca aquí tu URL de Apps Script
+const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbwbPxSQkDSemj6BLZOb-a2LCt7k5kXRd1TOStK11vvlUwknEQ7bc_E9XzNJNHh_x28nSg/exec" // 👈 coloca aquí tu URL de Apps Script
 
 export default function FormularioOAC() {
   const [registros, setRegistros] = useState<Registro[]>([])
@@ -122,12 +122,30 @@ export default function FormularioOAC() {
   }
 
   // 🔹 Guardar Excel localmente
-  const guardarExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(registros)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, "Registros")
-    XLSX.writeFile(wb, `Registros_${new Date().toLocaleDateString("es-ES")}.xlsx`)
+const guardarExcel = () => {
+  try {
+    if (registros.length === 0) {
+      alert("No hay registros para exportar.");
+      return;
+    }
+
+    const ws = XLSX.utils.json_to_sheet(registros);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Registros");
+
+    const fecha = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    const nombreArchivo = `Registros_${fecha}.xlsx`;
+
+    XLSX.writeFile(wb, nombreArchivo, { bookType: "xlsx", type: "file" });
+
+    setConfirmacion("✅ Excel guardado correctamente en tu PC");
+    setTimeout(() => setConfirmacion(""), 3000);
+  } catch (error) {
+    console.error("Error al guardar Excel:", error);
+    setConfirmacion("❌ No se pudo generar el archivo Excel");
   }
+};
+
 
   const toggleDescripcion = (index: number) => setDescripcionesVisibles(prev => ({ ...prev, [index]: !prev[index] }))
   const toggleMotivos = (index: number) => setMotivosVisibles(prev => ({ ...prev, [index]: !prev[index] }))
