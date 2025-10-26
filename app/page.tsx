@@ -29,7 +29,7 @@ interface Registro {
   motivos: string
 }
 
-const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbx7QOmqNY8uXEhppK66yO0v1L1K3ex9929Su_KOQEiFJKh6FDi8ZvTGi9PWyo172C8aeQ/exec" // 👈 coloca aquí tu URL de Apps Script
+const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzBvpMlE7jtkqbtWBfPDezU3gHqWnjacRdYx4xhK8BAGNK2K24F3_pBBqIspkKt5PbDLw/exec" // 👈 coloca aquí tu URL de Apps Script
 
 export default function FormularioOAC() {
   const [registros, setRegistros] = useState<Registro[]>([])
@@ -54,34 +54,37 @@ export default function FormularioOAC() {
 
 const guardarEnGoogleSheets = async (registro: Registro) => {
   try {
-    // Crear URLSearchParams en lugar de FormData
-    const params = new URLSearchParams()
-    Object.entries(registro).forEach(([key, value]) => {
-      params.append(key, String(value ?? ""))
-    })
+    // Crear objeto plano con los datos
+    const datos = Object.fromEntries(
+      Object.entries(registro).map(([key, value]) => [key, String(value ?? "")])
+    );
 
-    // Enviar los datos como application/x-www-form-urlencoded
+    // Enviar como JSON
     const response = await fetch(GOOGLE_SHEETS_URL, {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
       },
-      body: params.toString()
-    })
+      body: JSON.stringify(datos)
+    });
 
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-    const result = await response.text()
-    console.log("✅ Respuesta Google Sheets:", result)
+    const result = await response.json();
+    console.log("✅ Respuesta Google Sheets:", result);
 
-    setConfirmacion("✅ Registro guardado en la nube")
-    setTimeout(() => setConfirmacion(""), 3000)
+    if (result.result === 'success') {
+      setConfirmacion("✅ Registro guardado en la nube");
+    } else {
+      throw new Error(result.error);
+    }
+    
+    setTimeout(() => setConfirmacion(""), 3000);
   } catch (error) {
-    console.error("❌ Error al guardar:", error)
-    setConfirmacion("❌ Error al guardar en la nube")
+    console.error("❌ Error al guardar:", error);
+    setConfirmacion("❌ Error al guardar en la nube");
   }
 }
-
   // 🔹 Añadir registro
   const agregarALista = () => {
     const nuevoRegistro: Registro = {
