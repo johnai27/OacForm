@@ -1,0 +1,12 @@
+{
+  "background_color": "#ffffff",
+  "description": "Sistema de registro de atención al ciudadano",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "oac-seven.vercel",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "oac-seven.vercel",
+  "start_url": "/",
+  "theme_color": "#ffffff"
+}
