@@ -29,7 +29,7 @@ interface Registro {
   motivos: string
 }
 
-const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbzTbaBaFWMzhHYWK36-cph193_IhwY6vPrDAQlLMJzj0qgpCJgfGUoN3mpQSkt0m0NfyQ/exec" // 👈 coloca aquí tu URL de Apps Script
+const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbx7QOmqNY8uXEhppK66yO0v1L1K3ex9929Su_KOQEiFJKh6FDi8ZvTGi9PWyo172C8aeQ/exec" // 👈 coloca aquí tu URL de Apps Script
 
 export default function FormularioOAC() {
   const [registros, setRegistros] = useState<Registro[]>([])
@@ -54,22 +54,25 @@ export default function FormularioOAC() {
 
 const guardarEnGoogleSheets = async (registro: Registro) => {
   try {
-    // Crear los datos como si fuera un formulario
-    const formData = new FormData()
+    // Crear URLSearchParams en lugar de FormData
+    const params = new URLSearchParams()
     Object.entries(registro).forEach(([key, value]) => {
-      formData.append(key, String(value ?? ""))
+      params.append(key, String(value ?? ""))
     })
 
-    // Enviar los datos al Apps Script
+    // Enviar los datos como application/x-www-form-urlencoded
     const response = await fetch(GOOGLE_SHEETS_URL, {
       method: "POST",
-      body: formData, // sin headers JSON
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString()
     })
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
     const result = await response.text()
-    console.log("Respuesta Google Sheets:", result)
+    console.log("✅ Respuesta Google Sheets:", result)
 
     setConfirmacion("✅ Registro guardado en la nube")
     setTimeout(() => setConfirmacion(""), 3000)
